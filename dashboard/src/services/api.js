@@ -1,4 +1,4 @@
-const API_BASE = 'http://localhost:8080/api';
+const API_BASE = 'http://localhost:8090/api';
 
 // Existing API functions
 export async function fetchIncidents(filters = {}) {
@@ -56,6 +56,17 @@ export async function fetchServices() {
 export async function analyzeIncident(id) {
     const response = await fetch(`${API_BASE}/incidents/${id}/analyze`, {
         method: 'POST',
+    });
+    return response.json();
+}
+
+export async function updateIncident(id, updates) {
+    const response = await fetch(`${API_BASE}/incidents/${id}`, {
+        method: 'PATCH',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(updates),
     });
     return response.json();
 }

@@ -25,6 +25,12 @@ public class IncidentEntity {
     @Enumerated(EnumType.STRING)
     private IncidentStatus status;
 
+    @Column(columnDefinition = "TEXT")
+    private String notes;
+
+    private Instant acknowledgedAt;
+    private Instant resolvedAt;
+
     public IncidentEntity() {
     }
 
@@ -38,7 +44,7 @@ public class IncidentEntity {
     }
 
     public enum IncidentStatus {
-        OPEN, RESOLVED
+        OPEN, ACKNOWLEDGED, RESOLVED
     }
 
     // Getters and Setters
@@ -96,5 +102,29 @@ public class IncidentEntity {
 
     public void setStatus(IncidentStatus status) {
         this.status = status;
+    }
+
+    public String getNotes() {
+        return notes;
+    }
+
+    public void setNotes(String notes) {
+        this.notes = notes;
+    }
+
+    public Instant getAcknowledgedAt() {
+        return acknowledgedAt;
+    }
+
+    public void setAcknowledgedAt(Instant acknowledgedAt) {
+        this.acknowledgedAt = acknowledgedAt;
+    }
+
+    public Instant getResolvedAt() {
+        return resolvedAt;
+    }
+
+    public void setResolvedAt(Instant resolvedAt) {
+        this.resolvedAt = resolvedAt;
     }
 }

@@ -72,6 +72,8 @@ public class ApiController {
                 stats.put("total", all.size());
                 stats.put("open",
                                 all.stream().filter(i -> i.getStatus() == IncidentEntity.IncidentStatus.OPEN).count());
+                stats.put("acknowledged",
+                                all.stream().filter(i -> i.getStatus() == IncidentEntity.IncidentStatus.ACKNOWLEDGED).count());
                 stats.put("resolved",
                                 all.stream().filter(i -> i.getStatus() == IncidentEntity.IncidentStatus.RESOLVED)
                                                 .count());
@@ -87,6 +89,37 @@ public class ApiController {
                 stats.put("byService", byService);
 
                 return ResponseEntity.ok(stats);
+        }
+
+        @PatchMapping("/incidents/{id}")
+        public ResponseEntity<IncidentEntity> updateIncident(
+                        @PathVariable Long id,
+                        @RequestBody Map<String, Object> updates) {
+                
+                return incidentRepository.findById(id)
+                        .map(incident -> {
+                                if (updates.containsKey("status")) {
+                                        String newStatus = (String) updates.get("status");
+                                        IncidentEntity.IncidentStatus status = IncidentEntity.IncidentStatus.valueOf(newStatus);
+                                        incident.setStatus(status);
+                                        
+                                        // Track status change timestamps
+                                        if (status == IncidentEntity.IncidentStatus.ACKNOWLEDGED) {
+                                                incident.setAcknowledgedAt(Instant.now());
+                                        } else if (status == IncidentEntity.IncidentStatus.RESOLVED) {
+                                                incident.setResolvedAt(Instant.now());
+                                                incident.setEndTime(Instant.now());
+                                        }
+                                }
+                                
+                                if (updates.containsKey("notes")) {
+                                        incident.setNotes((String) updates.get("notes"));
+                                }
+                                
+                                incidentRepository.save(incident);
+                                return ResponseEntity.ok(incident);
+                        })
+                        .orElse(ResponseEntity.notFound().build());
         }
 
         // ==================== LOGS ====================

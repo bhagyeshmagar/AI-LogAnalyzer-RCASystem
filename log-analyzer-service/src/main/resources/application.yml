@@ -13,7 +13,7 @@ logging:
     com.company.loganalyzer: DEBUG
 
 server:
-  port: 8080
+  port: 8090
 
 ---
 spring:
@@ -34,10 +34,12 @@ spring:
     elasticsearch:
       uris: http://localhost:9200
   datasource:
-    url: jdbc:postgresql://localhost:5432/loganalyzer
+    url: jdbc:postgresql://localhost:5432/loganalyzer?options=-c%20timezone=Asia/Kolkata
     username: user
     password: password
     driver-class-name: org.postgresql.Driver
+    hikari:
+      connection-init-sql: SET TIME ZONE 'Asia/Kolkata'
   jpa:
     hibernate:
       ddl-auto: update

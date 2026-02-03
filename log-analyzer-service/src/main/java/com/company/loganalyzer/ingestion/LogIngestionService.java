@@ -29,17 +29,20 @@ public class LogIngestionService {
     private final LogRepository logRepository;
     private final IncidentRepository incidentRepository;
     private final AlertService alertService;
+    private final org.springframework.messaging.simp.SimpMessagingTemplate messagingTemplate;
 
     public LogIngestionService(LogNormalizer logNormalizer, ErrorClusterer errorClusterer,
             AnomalyDetector anomalyDetector,
             LogRepository logRepository, IncidentRepository incidentRepository,
-            AlertService alertService) {
+            AlertService alertService,
+            org.springframework.messaging.simp.SimpMessagingTemplate messagingTemplate) {
         this.logNormalizer = logNormalizer;
         this.errorClusterer = errorClusterer;
         this.anomalyDetector = anomalyDetector;
         this.logRepository = logRepository;
         this.incidentRepository = incidentRepository;
         this.alertService = alertService;
+        this.messagingTemplate = messagingTemplate;
     }
 
     @KafkaListener(topics = KafkaConfig.TOPIC_APP_LOGS, groupId = "log-analyzer-group")
@@ -62,6 +65,9 @@ public class LogIngestionService {
                 clusterId,
                 logEvent.timestamp() != null ? logEvent.timestamp() : Instant.now());
         logRepository.save(logDoc);
+
+        // Broadcast to WebSocket
+        messagingTemplate.convertAndSend("/topic/logs", logDoc);
 
         // 4. Detect Anomalies
         List<AnomalyType> anomalies = anomalyDetector.detectAnomalies(logEvent.serviceName(), logEvent.level());

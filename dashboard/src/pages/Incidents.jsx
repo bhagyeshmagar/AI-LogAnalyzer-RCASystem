@@ -10,20 +10,30 @@ function Incidents() {
         type: ''
     });
 
-    useEffect(() => {
-        async function loadIncidents() {
-            try {
-                setLoading(true);
-                const data = await fetchIncidents(filters);
-                setIncidents(data);
-            } catch (err) {
-                console.error('Failed to load incidents:', err);
-            } finally {
-                setLoading(false);
-            }
+    const loadIncidents = async () => {
+        try {
+            setLoading(true);
+            const data = await fetchIncidents(filters);
+            setIncidents(data);
+        } catch (err) {
+            console.error('Failed to load incidents:', err);
+        } finally {
+            setLoading(false);
         }
+    };
+
+    useEffect(() => {
         loadIncidents();
     }, [filters]);
+
+    const getStatusIcon = (status) => {
+        switch (status) {
+            case 'OPEN': return '🔴';
+            case 'ACKNOWLEDGED': return '🟡';
+            case 'RESOLVED': return '🟢';
+            default: return '⚪';
+        }
+    };
 
     return (
         <div>
@@ -38,8 +48,9 @@ function Incidents() {
                     onChange={(e) => setFilters({ ...filters, status: e.target.value })}
                 >
                     <option value="">All Statuses</option>
-                    <option value="OPEN">Open</option>
-                    <option value="RESOLVED">Resolved</option>
+                    <option value="OPEN">🔴 Open</option>
+                    <option value="ACKNOWLEDGED">🟡 Acknowledged</option>
+                    <option value="RESOLVED">🟢 Resolved</option>
                 </select>
 
                 <select
@@ -52,11 +63,16 @@ function Incidents() {
                     <option value="NEW_ERROR_PATTERN">New Error Pattern</option>
                     <option value="RESOURCE_EXHAUSTION">Resource Exhaustion</option>
                 </select>
+
+                <button className="btn btn-secondary" onClick={loadIncidents}>
+                    🔄 Refresh
+                </button>
             </div>
 
             {loading ? (
                 <div className="loading">
                     <div className="spinner"></div>
+                    <span className="loading-text">Loading incidents...</span>
                 </div>
             ) : incidents.length === 0 ? (
                 <div className="empty-state">
@@ -65,6 +81,9 @@ function Incidents() {
                 </div>
             ) : (
                 <div className="card">
+                    <div style={{ marginBottom: '16px', color: 'var(--text-muted)', fontSize: '0.875rem' }}>
+                        Showing {incidents.length} incident{incidents.length !== 1 ? 's' : ''}
+                    </div>
                     <div className="table-container">
                         <table>
                             <thead>
@@ -82,26 +101,26 @@ function Incidents() {
                                 {incidents.map(incident => (
                                     <tr key={incident.id}>
                                         <td>
-                                            <Link to={`/incidents/${incident.id}`} style={{ color: '#a855f7', fontWeight: 600 }}>
+                                            <Link to={`/incidents/${incident.id}`} style={{ color: 'var(--accent-secondary)', fontWeight: 600 }}>
                                                 #{incident.id}
                                             </Link>
                                         </td>
-                                        <td>{incident.serviceName}</td>
+                                        <td style={{ fontWeight: 500 }}>{incident.serviceName}</td>
                                         <td><span className="badge error">{incident.type.replace('_', ' ')}</span></td>
                                         <td style={{ maxWidth: '300px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                                             {incident.description}
                                         </td>
                                         <td>
                                             <span className={`badge ${incident.status.toLowerCase()}`}>
-                                                {incident.status}
+                                                {getStatusIcon(incident.status)} {incident.status}
                                             </span>
                                         </td>
-                                        <td style={{ color: '#94a3b8' }}>
+                                        <td style={{ color: 'var(--text-muted)', fontSize: '0.875rem' }}>
                                             {new Date(incident.startTime).toLocaleString()}
                                         </td>
                                         <td>
-                                            <Link to={`/incidents/${incident.id}`} className="btn btn-primary" style={{ padding: '6px 12px', fontSize: '0.75rem' }}>
-                                                View Details
+                                            <Link to={`/incidents/${incident.id}`} className="btn btn-secondary btn-sm">
+                                                View →
                                             </Link>
                                         </td>
                                     </tr>

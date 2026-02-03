@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { fetchIncident, analyzeIncident } from '../services/api';
+import { fetchIncident, analyzeIncident, updateIncident } from '../services/api';
 
 function IncidentDetail() {
     const { id } = useParams();
@@ -8,6 +8,9 @@ function IncidentDetail() {
     const [analysis, setAnalysis] = useState(null);
     const [loading, setLoading] = useState(true);
     const [analyzing, setAnalyzing] = useState(false);
+    const [updating, setUpdating] = useState(false);
+    const [notes, setNotes] = useState('');
+    const [showNoteInput, setShowNoteInput] = useState(false);
     const [error, setError] = useState(null);
 
     useEffect(() => {
@@ -16,6 +19,7 @@ function IncidentDetail() {
                 setLoading(true);
                 const data = await fetchIncident(id);
                 setIncident(data);
+                setNotes(data.notes || '');
             } catch (err) {
                 setError(err.message);
             } finally {
@@ -37,10 +41,36 @@ function IncidentDetail() {
         }
     };
 
+    const handleStatusChange = async (newStatus) => {
+        try {
+            setUpdating(true);
+            const updated = await updateIncident(id, { status: newStatus });
+            setIncident(updated);
+        } catch (err) {
+            alert('Failed to update incident status.');
+        } finally {
+            setUpdating(false);
+        }
+    };
+
+    const handleSaveNotes = async () => {
+        try {
+            setUpdating(true);
+            const updated = await updateIncident(id, { notes });
+            setIncident(updated);
+            setShowNoteInput(false);
+        } catch (err) {
+            alert('Failed to save notes.');
+        } finally {
+            setUpdating(false);
+        }
+    };
+
     if (loading) {
         return (
             <div className="loading">
                 <div className="spinner"></div>
+                <span className="loading-text">Loading incident details...</span>
             </div>
         );
     }
@@ -56,9 +86,55 @@ function IncidentDetail() {
         );
     }
 
+    const getStatusActions = () => {
+        switch (incident.status) {
+            case 'OPEN':
+                return (
+                    <button
+                        className="btn btn-primary"
+                        onClick={() => handleStatusChange('ACKNOWLEDGED')}
+                        disabled={updating}
+                    >
+                        {updating ? '...' : '✓ Acknowledge'}
+                    </button>
+                );
+            case 'ACKNOWLEDGED':
+                return (
+                    <>
+                        <button
+                            className="btn btn-success"
+                            onClick={() => handleStatusChange('RESOLVED')}
+                            disabled={updating}
+                        >
+                            {updating ? '...' : '✓ Mark Resolved'}
+                        </button>
+                        <button
+                            className="btn btn-secondary"
+                            onClick={() => handleStatusChange('OPEN')}
+                            disabled={updating}
+                        >
+                            Reopen
+                        </button>
+                    </>
+                );
+            case 'RESOLVED':
+                return (
+                    <button
+                        className="btn btn-secondary"
+                        onClick={() => handleStatusChange('OPEN')}
+                        disabled={updating}
+                    >
+                        Reopen Incident
+                    </button>
+                );
+            default:
+                return null;
+        }
+    };
+
     return (
         <div className="incident-detail">
-            <Link to="/incidents" style={{ color: '#94a3b8', marginBottom: '24px', display: 'inline-block' }}>
+            <Link to="/incidents" style={{ color: 'var(--text-muted)', marginBottom: '24px', display: 'inline-flex', alignItems: 'center', gap: '8px' }}>
                 ← Back to Incidents
             </Link>
 
@@ -71,6 +147,61 @@ function IncidentDetail() {
                 </div>
                 <p>{incident.description}</p>
             </header>
+
+            {/* Action Buttons */}
+            <div style={{ display: 'flex', gap: '12px', marginBottom: '24px', flexWrap: 'wrap' }}>
+                {getStatusActions()}
+                <button
+                    className="btn btn-secondary"
+                    onClick={() => setShowNoteInput(!showNoteInput)}
+                >
+                    📝 {showNoteInput ? 'Cancel' : 'Add Note'}
+                </button>
+            </div>
+
+            {/* Notes Section */}
+            {showNoteInput && (
+                <div className="card" style={{ marginBottom: '24px' }}>
+                    <h4 style={{ marginBottom: '12px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        📝 Incident Notes
+                    </h4>
+                    <textarea
+                        value={notes}
+                        onChange={(e) => setNotes(e.target.value)}
+                        placeholder="Add notes about this incident, resolution steps, etc..."
+                        style={{
+                            width: '100%',
+                            minHeight: '120px',
+                            padding: '14px',
+                            borderRadius: '12px',
+                            border: '1px solid var(--border-color)',
+                            background: 'var(--bg-tertiary)',
+                            color: 'var(--text-primary)',
+                            fontFamily: 'inherit',
+                            fontSize: '0.9rem',
+                            resize: 'vertical',
+                            marginBottom: '12px'
+                        }}
+                    />
+                    <button
+                        className="btn btn-primary"
+                        onClick={handleSaveNotes}
+                        disabled={updating}
+                    >
+                        {updating ? 'Saving...' : 'Save Notes'}
+                    </button>
+                </div>
+            )}
+
+            {/* Existing Notes Display */}
+            {incident.notes && !showNoteInput && (
+                <div className="card" style={{ marginBottom: '24px', borderLeft: '4px solid var(--accent-primary)' }}>
+                    <h4 style={{ marginBottom: '12px', color: 'var(--text-secondary)', fontSize: '0.8rem', textTransform: 'uppercase' }}>
+                        Notes
+                    </h4>
+                    <p style={{ whiteSpace: 'pre-wrap', color: 'var(--text-primary)' }}>{incident.notes}</p>
+                </div>
+            )}
 
             <div className="incident-meta">
                 <div className="meta-item">
@@ -88,9 +219,21 @@ function IncidentDetail() {
                 <div className="meta-item">
                     <div className="meta-label">End Time</div>
                     <div className="meta-value">
-                        {incident.endTime ? new Date(incident.endTime).toLocaleString() : 'Ongoing'}
+                        {incident.endTime ? new Date(incident.endTime).toLocaleString() : '⏳ Ongoing'}
                     </div>
                 </div>
+                {incident.acknowledgedAt && (
+                    <div className="meta-item">
+                        <div className="meta-label">Acknowledged At</div>
+                        <div className="meta-value">{new Date(incident.acknowledgedAt).toLocaleString()}</div>
+                    </div>
+                )}
+                {incident.resolvedAt && (
+                    <div className="meta-item">
+                        <div className="meta-label">Resolved At</div>
+                        <div className="meta-value">{new Date(incident.resolvedAt).toLocaleString()}</div>
+                    </div>
+                )}
             </div>
 
             {!analysis ? (
@@ -107,23 +250,14 @@ function IncidentDetail() {
                         </>
                     ) : (
                         <>
-                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                                <path d="M12 2a10 10 0 1 0 10 10H12V2z" />
-                                <path d="M21.18 8.02c-1-2.3-2.85-4.17-5.16-5.18" />
-                            </svg>
-                            Generate AI Root Cause Analysis
+                            🤖 Generate AI Root Cause Analysis
                         </>
                     )}
                 </button>
             ) : (
                 <div className="rca-report">
                     <div className="rca-header">
-                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#a855f7" strokeWidth="2">
-                            <circle cx="12" cy="12" r="10" />
-                            <path d="M12 16v-4" />
-                            <path d="M12 8h.01" />
-                        </svg>
-                        <h3>AI Root Cause Analysis</h3>
+                        <h3>🤖 AI Root Cause Analysis</h3>
                     </div>
 
                     <div className="rca-section">
@@ -136,8 +270,8 @@ function IncidentDetail() {
                         <p style={{
                             padding: '16px',
                             background: 'var(--bg-tertiary)',
-                            borderRadius: '8px',
-                            borderLeft: '4px solid #ef4444'
+                            borderRadius: '10px',
+                            borderLeft: '4px solid var(--error)'
                         }}>
                             {analysis.probableRootCause}
                         </p>
@@ -155,7 +289,7 @@ function IncidentDetail() {
                     <div className="rca-section">
                         <h4>Confidence Score</h4>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                            <span style={{ fontWeight: 700, fontSize: '1.25rem', color: '#a855f7' }}>
+                            <span style={{ fontWeight: 700, fontSize: '1.25rem', color: 'var(--accent-secondary)' }}>
                                 {Math.round(analysis.confidenceScore * 100)}%
                             </span>
                             <div className="confidence-bar" style={{ flex: 1 }}>

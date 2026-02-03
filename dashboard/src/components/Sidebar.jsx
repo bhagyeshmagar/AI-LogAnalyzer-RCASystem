@@ -1,73 +1,66 @@
 import { NavLink } from 'react-router-dom';
+import { useState, useEffect } from 'react';
 
 function Sidebar() {
+    const [theme, setTheme] = useState(() => {
+        const saved = localStorage.getItem('theme');
+        return saved || (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+    });
+
+    useEffect(() => {
+        document.documentElement.setAttribute('data-theme', theme);
+        localStorage.setItem('theme', theme);
+    }, [theme]);
+
+    const toggleTheme = () => {
+        setTheme(prev => prev === 'dark' ? 'light' : 'dark');
+    };
+
     return (
         <aside className="sidebar">
             <div className="sidebar-logo">
-                <svg width="32" height="32" viewBox="0 0 32 32" fill="none">
-                    <circle cx="16" cy="16" r="14" fill="url(#gradient)" />
-                    <path d="M10 16L14 20L22 12" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                    <defs>
-                        <linearGradient id="gradient" x1="0" y1="0" x2="32" y2="32">
-                            <stop offset="0%" stopColor="#7c3aed" />
-                            <stop offset="100%" stopColor="#a855f7" />
-                        </linearGradient>
-                    </defs>
-                </svg>
+                <div className="sidebar-logo-icon">⚡</div>
                 <h1>Log Analyzer</h1>
             </div>
 
             <nav className="sidebar-nav">
                 <NavLink to="/" className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`} end>
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                        <rect x="3" y="3" width="7" height="7" rx="1" />
-                        <rect x="14" y="3" width="7" height="7" rx="1" />
-                        <rect x="3" y="14" width="7" height="7" rx="1" />
-                        <rect x="14" y="14" width="7" height="7" rx="1" />
-                    </svg>
+                    <span className="nav-icon">📊</span>
                     <span>Dashboard</span>
                 </NavLink>
 
                 <NavLink to="/incidents" className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`}>
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                        <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" />
-                        <line x1="12" y1="9" x2="12" y2="13" />
-                        <line x1="12" y1="17" x2="12.01" y2="17" />
-                    </svg>
+                    <span className="nav-icon">🚨</span>
                     <span>Incidents</span>
                 </NavLink>
 
                 <NavLink to="/logs" className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`}>
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                        <line x1="3" y1="6" x2="21" y2="6" />
-                        <line x1="3" y1="12" x2="21" y2="12" />
-                        <line x1="3" y1="18" x2="21" y2="18" />
-                    </svg>
+                    <span className="nav-icon">📋</span>
                     <span>Log Explorer</span>
                 </NavLink>
 
                 <NavLink to="/clusters" className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`}>
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                        <circle cx="12" cy="12" r="3" />
-                        <circle cx="19" cy="5" r="2" />
-                        <circle cx="5" cy="5" r="2" />
-                        <circle cx="19" cy="19" r="2" />
-                        <circle cx="5" cy="19" r="2" />
-                        <line x1="12" y1="9" x2="12" y2="3" />
-                        <line x1="9" y1="12" x2="3" y2="12" />
-                        <line x1="15" y1="12" x2="21" y2="12" />
-                        <line x1="12" y1="15" x2="12" y2="21" />
-                    </svg>
+                    <span className="nav-icon">🧩</span>
                     <span>Error Clusters</span>
                 </NavLink>
 
+                <NavLink to="/services" className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`}>
+                    <span className="nav-icon">🖥️</span>
+                    <span>Services</span>
+                </NavLink>
+
                 <NavLink to="/flows" className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`}>
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                        <path d="M22 12h-4l-3 9L9 3l-3 9H2" />
-                    </svg>
+                    <span className="nav-icon">🔀</span>
                     <span>API Flows</span>
                 </NavLink>
             </nav>
+
+            <div className="theme-toggle">
+                <button className="theme-btn" onClick={toggleTheme}>
+                    <span className="nav-icon">{theme === 'dark' ? '🌙' : '☀️'}</span>
+                    <span>{theme === 'dark' ? 'Dark Mode' : 'Light Mode'}</span>
+                </button>
+            </div>
         </aside>
     );
 }

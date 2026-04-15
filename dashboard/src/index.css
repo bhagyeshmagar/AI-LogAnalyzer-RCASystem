@@ -386,6 +386,7 @@ body::before {
 .stat-card.open .stat-value {
   background: linear-gradient(135deg, #ef4444, #f97316);
   -webkit-background-clip: text;
+  background-clip: text;
 }
 
 .stat-card.open::before {
@@ -395,6 +396,7 @@ body::before {
 .stat-card.resolved .stat-value {
   background: linear-gradient(135deg, #22c55e, #4ade80);
   -webkit-background-clip: text;
+  background-clip: text;
 }
 
 .stat-card.resolved::before {
@@ -729,6 +731,7 @@ input::placeholder {
   font-size: 1.25rem;
   background: var(--accent-gradient);
   -webkit-background-clip: text;
+  background-clip: text;
   -webkit-text-fill-color: transparent;
 }
 
@@ -825,6 +828,7 @@ input::placeholder {
   font-weight: 700;
   background: var(--accent-gradient);
   -webkit-background-clip: text;
+  background-clip: text;
   -webkit-text-fill-color: transparent;
 }
 

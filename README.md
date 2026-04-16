@@ -29,6 +29,10 @@ TeamRio acts as an aggregator and intelligent analysis layer sitting on top of s
 ### Architecture Diagram
 
 ```mermaid
+---
+config:
+  layout: elk
+---
 graph TD
     classDef frontend fill:#3b82f6,stroke:#1d4ed8,stroke-width:2px,color:#fff
     classDef backend fill:#10b981,stroke:#047857,stroke-width:2px,color:#fff
@@ -36,55 +40,67 @@ graph TD
     classDef demo fill:#8b5cf6,stroke:#6d28d9,stroke-width:2px,color:#fff
     classDef ai fill:#ec4899,stroke:#be185d,stroke-width:2px,color:#fff
 
-    subgraph "Client / UI"
-        Dashboard[React Dashboard]:::frontend
+    subgraph "1. Client / User Interface"
+        Dashboard["React 19 Dashboard<br/>(Vite + React Flow)"]:::frontend
     end
 
-    subgraph "Core Aggregation Layer"
-        Analyzer[Spring Boot Log Analyzer & Flow Engine]:::backend
+    subgraph "2. Core Intelligent Aggregation (Backend)"
+        Analyzer["Spring Boot 3 Log Analyzer & API Engine"]:::backend
+        
+        subgraph "Internal Engine Capabilities"
+            LogNorm["Log Normalizer & Classifier"]:::backend
+            GraphBuilder["API FlowGraph Builder"]:::backend
+            BottleneckDet["Anomaly & Bottleneck Detector"]:::backend
+            RCA["LLM Root-Cause Service"]:::backend
+        end
+        
+        Analyzer -.-> LogNorm
+        Analyzer -.-> GraphBuilder
+        Analyzer -.-> BottleneckDet
+        Analyzer -.-> RCA
     end
 
-    subgraph "Infrastructure"
-        Kafka[Apache Kafka]:::infra
-        Zipkin[Zipkin Server]:::infra
-        ES[(Elasticsearch)]:::infra
-        PG[(PostgreSQL)]:::infra
+    subgraph "3. Intermediary / Data Infrastructure"
+        Kafka["Apache Kafka<br/>(Message Broker)"]:::infra
+        Zipkin["Zipkin Server<br/>(Trace Collector)"]:::infra
+        ES[("Elasticsearch<br/>Index / Search")]:::infra
+        PG[("PostgreSQL<br/>Relational & Snapshot DB")]:::infra
     end
 
-    subgraph "Data Generators"
-        Gateway[API Gateway]:::demo
-        UserService[User Service]:::demo
-        OrderService[Order Service]:::demo
-        InventoryService[Inventory Service]:::demo
-        PaymentService[Payment Service]:::demo
-        Simulator[Log Simulator]:::demo
+    subgraph "4. Telemetry Generators (Data Sources)"
+        Gateway["API Gateway"]:::demo
+        UserService["User Service"]:::demo
+        OrderService["Order Service"]:::demo
+        InventoryService["Inventory Service"]:::demo
+        PaymentService["Payment Service"]:::demo
+        Simulator["Log Traffic Simulator"]:::demo
     end
     
-    subgraph "External Intelligence"
-        LLM[OpenAI API]:::ai
+    subgraph "5. External Intelligence"
+        LLM["OpenAI API<br/>(Spring AI)"]:::ai
     end
-
-    %% Generator linkages
-    ClientRequest((Client)) --> Gateway
+    ClientReq((End User)) --> Gateway
     Gateway --> UserService
     Gateway --> OrderService
     OrderService --> InventoryService
     OrderService --> PaymentService
-
-    %% Trace & Log Ingestion
-    Gateway & UserService & OrderService & InventoryService & PaymentService -.->|Spans| Zipkin
-    Gateway & UserService & OrderService & InventoryService & PaymentService -.->|Logs| Kafka
-    Simulator -.->|Bursts| Kafka
-    
-    %% Processing
-    Kafka ==>|Log Streams| Analyzer
-    Zipkin ==>|Distributed Traces| Analyzer
-    Analyzer <==>|Index/Search| ES
-    Analyzer <==>|Snapshots| PG
-    Analyzer <==>|RCA Generation| LLM
-    
-    %% Realtime Updates
-    Analyzer == WebSocket/REST ==> Dashboard
+    Gateway -.->|"Trace Spans (JSON)"| Zipkin
+    UserService -.->|"Trace Spans (JSON)"| Zipkin
+    OrderService -.->|"Trace Spans (JSON)"| Zipkin
+    InventoryService -.->|"Trace Spans (JSON)"| Zipkin
+    PaymentService -.->|"Trace Spans (JSON)"| Zipkin
+    Gateway -.->|"Log Strings/JSON"| Kafka
+    UserService -.->|"Log Strings/JSON"| Kafka
+    OrderService -.->|"Log Strings/JSON"| Kafka
+    InventoryService -.->|"Log Strings/JSON"| Kafka
+    PaymentService -.->|"Log Strings/JSON"| Kafka
+    Simulator -.->|"Synthetic Log Bursts"| Kafka
+    Kafka ==>|"Log Consumption Topic"| Analyzer
+    Zipkin ==>|"Distributed Trace Polling"| Analyzer
+    Analyzer <==>|"Full-Text Fast Query"| ES
+    Analyzer <==>|"Graph Topology Snapshots"| PG
+    RCA <==>|"Prompt Chaining + RCA"| LLM
+    Analyzer ==>|"WebSocket (STOMP) & REST"| Dashboard
 ```
 
 ### Flow processing pipeline
